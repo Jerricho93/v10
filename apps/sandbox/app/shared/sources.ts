@@ -3,30 +3,35 @@ import { getMuxAssetId } from './mux';
 export const SOURCES = {
   'hls-1': {
     label: 'HLS - Big Buck Bunny',
+    title: 'Big Buck Bunny',
     url: 'https://stream.mux.com/VcmKA6aqzIzlg3MayLJDnbF55kX00mds028Z65QxvBYaA.m3u8',
     type: 'hls',
     subType: 'ts',
   },
   'hls-2': {
     label: 'HLS - Elephants Dream',
+    title: 'Elephants Dream',
     url: 'https://stream.mux.com/Sc89iWAyNkhJ3P1rQ02nrEdCFTnfT01CZ2KmaEcxXfB008.m3u8',
     type: 'hls',
     subType: 'ts',
   },
   'hls-3': {
     label: 'HLS - Dancing Dude',
+    title: 'Dancing Dude',
     url: 'https://stream.mux.com/lhnU49l1VGi3zrTAZhDm9LUUxSjpaPW9BL4jY25Kwo4.m3u8',
     type: 'hls',
     subType: 'mp4',
   },
   'hls-4': {
     label: 'HLS - View From A Blue Moon Trailer',
+    title: 'View From A Blue Moon Trailer',
     url: 'https://stream.mux.com/lyrKpPcGfqyzeI00jZAfW6MvP6GNPrkML.m3u8',
     type: 'hls',
     subType: 'mp4',
   },
   'hls-5': {
     label: 'HLS - Mad Max Fury Road Trailer',
+    title: 'Mad Max Fury Road Trailer',
     url: 'https://stream.mux.com/JX01bG8eB4uaoV3OpDuK602rBfvdSgrMObjwuUOBn4JrQ.m3u8',
     type: 'hls',
     subType: 'mp4',
@@ -39,6 +44,7 @@ export const SOURCES = {
   },
   'hls-live': {
     label: 'HLS - Live Stream Big Buck Bunny',
+    title: 'Big Buck Bunny',
     url: 'https://stream.mux.com/v69RSHhFelSm4701snP22dYz2jICy4E4FUyk02rW4gxRM.m3u8',
     type: 'hls',
     subType: 'mp4',
@@ -52,16 +58,19 @@ export const SOURCES = {
   },
   'mp4-1': {
     label: 'MP4 - Dancing Dude',
+    title: 'Dancing Dude',
     url: 'https://stream.mux.com/lhnU49l1VGi3zrTAZhDm9LUUxSjpaPW9BL4jY25Kwo4/highest.mp4',
     type: 'mp4',
   },
   'dash-1': {
     label: 'DASH - Big Buck Bunny',
+    title: 'Big Buck Bunny',
     url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd',
     type: 'dash',
   },
   'dash-2': {
     label: 'DASH - Envivio Test Stream',
+    title: 'Envivio Test Stream',
     url: 'https://dash.akamaized.net/envivio/EnvivioDash3/manifest.mpd',
     type: 'dash',
   },

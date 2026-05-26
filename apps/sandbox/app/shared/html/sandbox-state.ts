@@ -7,7 +7,7 @@ import {
   getInitialSource,
   type PreloadValue,
 } from '@app/shared/sandbox-listener';
-import type { SourceId } from '@app/shared/sources';
+import { SOURCES, type SourceId } from '@app/shared/sources';
 import type { Skin, Styling } from '@app/types';
 
 function getInitialStyling(): Styling {
@@ -34,6 +34,12 @@ export function createHtmlSandboxState(audioOnly?: boolean): HtmlSandboxState {
     loop: getInitialLoop(),
     preload: getInitialPreload(),
   };
+}
+
+/** Render player-level attributes (media-title) as an HTML attribute string. */
+export function renderPlayerAttrs(state: HtmlSandboxState): string {
+  const { title } = SOURCES[state.source];
+  return `media-title="${title}"`;
 }
 
 /** Render the user-controlled media attributes (autoplay/muted/loop/preload) as HTML attributes. */

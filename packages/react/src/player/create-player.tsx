@@ -16,7 +16,7 @@ import type { InferStoreState } from '@videojs/store';
 import { combine, createStore } from '@videojs/store';
 import { useStore } from '@videojs/store/react';
 import type { FC, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 import { useDestroy } from '../utils/use-destroy';
 import { Container, PlayerContextProvider, useMedia, usePlayerContext } from './context';
@@ -28,6 +28,8 @@ export interface CreatePlayerConfig<Features extends AnyPlayerFeature[]> {
 
 export interface ProviderProps {
   children: ReactNode;
+  /** Human-readable title for the current media. Synced to player state and used by MediaSession. */
+  title?: string | null | undefined;
 }
 
 export interface CreatePlayerResult<Store extends PlayerStore> {
@@ -69,7 +71,7 @@ export function createPlayer<const Features extends AnyPlayerFeature[]>(
 ): CreatePlayerResult<PlayerStore<Features>>;
 
 export function createPlayer(config: CreatePlayerConfig<AnyPlayerFeature[]>): CreatePlayerResult<AnyPlayerStore> {
-  function Provider({ children }: ProviderProps): ReactNode {
+  function Provider({ children, title }: ProviderProps): ReactNode {
     const [store] = useState(() => createStore<PlayerTarget>()(combine(...config.features)));
     const [popupGroup] = useState(() => createPopupGroup());
     const [media, setMedia] = useState<Media | null>(null);
@@ -81,6 +83,11 @@ export function createPlayer(config: CreatePlayerConfig<AnyPlayerFeature[]>): Cr
       if (!media) return;
       return store.attach({ media, container });
     }, [media, container, store]);
+
+    useLayoutEffect(() => {
+      const state = store.state as { setTitle?: (t: string | null) => void };
+      state.setTitle?.(title ?? null);
+    }, [title, store]);
 
     return (
       <PlayerContextProvider value={{ store, media, setMedia, container, setContainer, popupGroup }}>

@@ -29,6 +29,7 @@ import {
   defineMenu,
   defineTime,
   defineTimeSlider,
+  defineTitle,
   defineVolumeSlider,
 } from '../ui/compounds';
 
@@ -47,6 +48,7 @@ defineInputIndicators();
 defineTimeSlider();
 defineVolumeSlider();
 defineTime();
+defineTitle();
 defineMenu();
 
 // Standalone elements.

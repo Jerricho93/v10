@@ -33,6 +33,7 @@ import { TimeElement } from '../../ui/time/time-element';
 import { TimeGroupElement } from '../../ui/time/time-group-element';
 import { TimeSeparatorElement } from '../../ui/time/time-separator-element';
 import { TimeSliderElement } from '../../ui/time-slider/time-slider-element';
+import { TitleElement } from '../../ui/title/title-element';
 import { VolumeIndicatorElement } from '../../ui/volume-indicator/volume-indicator-element';
 import { VolumeIndicatorFillElement } from '../../ui/volume-indicator/volume-indicator-fill-element';
 import { VolumeIndicatorValueElement } from '../../ui/volume-indicator/volume-indicator-value-element';
@@ -119,4 +120,8 @@ export function defineSliders(): void {
   defineSliderParts();
   safeDefine(SliderBufferElement);
   safeDefine(SliderThumbnailElement);
+}
+
+export function defineTitle(): void {
+  safeDefine(TitleElement);
 }

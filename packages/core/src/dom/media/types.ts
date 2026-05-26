@@ -5,6 +5,7 @@ import type {
   MediaErrorState,
   MediaFullscreenState,
   MediaLiveState,
+  MediaMetadataState,
   MediaPictureInPictureState,
   MediaPlaybackRateState,
   MediaPlaybackState,
@@ -52,6 +53,7 @@ export type VideoFeatures = [
   PlayerFeature<MediaControlsState>,
   PlayerFeature<MediaTextTrackState>,
   PlayerFeature<MediaErrorState>,
+  PlayerFeature<MediaMetadataState>,
 ];
 
 export type AudioFeatures = [
@@ -62,6 +64,7 @@ export type AudioFeatures = [
   PlayerFeature<MediaSourceState>,
   PlayerFeature<MediaBufferState>,
   PlayerFeature<MediaErrorState>,
+  PlayerFeature<MediaMetadataState>,
 ];
 
 // TODO: Define background video features (e.g., playback, source, buffer)
@@ -86,6 +89,7 @@ export type LiveVideoFeatures = [
   PlayerFeature<MediaTextTrackState>,
   PlayerFeature<MediaErrorState>,
   PlayerFeature<MediaLiveState>,
+  PlayerFeature<MediaMetadataState>,
 ];
 
 /**
@@ -102,6 +106,7 @@ export type LiveAudioFeatures = [
   PlayerFeature<MediaBufferState>,
   PlayerFeature<MediaErrorState>,
   PlayerFeature<MediaLiveState>,
+  PlayerFeature<MediaMetadataState>,
 ];
 
 export type VideoPlayerStore = PlayerStore<VideoFeatures>;

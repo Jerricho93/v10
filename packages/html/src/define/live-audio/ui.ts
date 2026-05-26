@@ -11,7 +11,7 @@ import { PopoverElement } from '../../ui/popover/popover-element';
 import { TooltipElement } from '../../ui/tooltip/tooltip-element';
 import { TooltipGroupElement } from '../../ui/tooltip/tooltip-group-element';
 import { safeDefine } from '../safe-define';
-import { defineErrorDialog, defineTime, defineTimeSlider, defineVolumeSlider } from '../ui/compounds';
+import { defineErrorDialog, defineTime, defineTimeSlider, defineTitle, defineVolumeSlider } from '../ui/compounds';
 
 // Value import — player.ts body runs before this module's body.
 import { LiveAudioPlayerElement } from './player';
@@ -26,6 +26,7 @@ defineErrorDialog();
 defineTimeSlider();
 defineVolumeSlider();
 defineTime();
+defineTitle();
 
 // Standalone elements.
 safeDefine(GestureElement);

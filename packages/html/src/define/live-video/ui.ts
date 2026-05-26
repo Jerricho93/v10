@@ -26,6 +26,7 @@ import {
   defineMenu,
   defineSliders,
   defineTime,
+  defineTitle,
 } from '../ui/compounds';
 
 // Value import — player.ts body runs before this module's body.
@@ -42,6 +43,7 @@ defineErrorDialog();
 defineInputIndicators();
 defineSliders();
 defineTime();
+defineTitle();
 defineMenu();
 
 // Standalone elements.

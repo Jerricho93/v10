@@ -1,0 +1,48 @@
+---
+title: Metadata
+description: Media title state and actions for the player store
+---
+
+import FeatureReference from "@/components/docs/api-reference/FeatureReference.astro";
+import DocsLink from "@/components/docs/DocsLink.astro";
+import FrameworkCase from "@/components/docs/FrameworkCase.astro";
+
+Provides a human-readable title for the current media. The title is used for the visible title overlay, the play button `aria-label`, and `navigator.mediaSession.metadata`.
+
+<FeatureReference feature="metadata" />
+
+### Selector
+
+<FrameworkCase frameworks={["react"]}>
+Pass `selectMetadata` to <DocsLink slug="reference/use-player">`usePlayer`</DocsLink> to subscribe to metadata state. Returns `undefined` if the metadata feature is not configured.
+</FrameworkCase>
+
+<FrameworkCase frameworks={["html"]}>
+Pass `selectMetadata` to <DocsLink slug="reference/player-controller">`PlayerController`</DocsLink> to subscribe to metadata state. Returns `undefined` if the metadata feature is not configured.
+</FrameworkCase>
+
+<FrameworkCase frameworks={["react"]}>
+```tsx title="TitleDisplay.tsx"
+import { selectMetadata, usePlayer } from '@videojs/react';
+
+function TitleDisplay() {
+  const metadata = usePlayer(selectMetadata);
+  if (!metadata?.title) return null;
+
+  return <span>{metadata.title}</span>;
+}
+```
+</FrameworkCase>
+
+<FrameworkCase frameworks={["html"]}>
+```ts title="title-display.ts"
+import { createPlayer, MediaElement, selectMetadata } from '@videojs/html';
+import { videoFeatures } from '@videojs/html/video';
+
+const { PlayerController, context } = createPlayer({ features: videoFeatures });
+
+class TitleDisplay extends MediaElement {
+  readonly #metadata = new PlayerController(this, context, selectMetadata);
+}
+```
+</FrameworkCase>
