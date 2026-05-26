@@ -23,6 +23,7 @@ import {
   defineInputIndicators,
   defineTime,
   defineTimeSlider,
+  defineTitle,
   defineVolumeSlider,
 } from '../ui/compounds';
 
@@ -41,6 +42,7 @@ defineInputIndicators();
 defineTimeSlider();
 defineVolumeSlider();
 defineTime();
+defineTitle();
 
 // Standalone elements.
 safeDefine(BufferingIndicatorElement);
