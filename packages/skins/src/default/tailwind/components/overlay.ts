@@ -6,7 +6,7 @@ export const overlay = cn(
   'pointer-events-none rounded-[inherit]',
   // Default: hidden
   'opacity-0',
-  '[background-image:linear-gradient(to_bottom,oklch(0_0_0/0.3),oklch(0_0_0/0.15),oklch(0_0_0/0)),linear-gradient(to_top,oklch(0_0_0/0.5),oklch(0_0_0/0.3),oklch(0_0_0/0))]',
+  '[background-image:linear-gradient(to_top,oklch(0_0_0_/_0.5),oklch(0_0_0_/_0.3)_25%,oklch(0_0_0_/_0)),linear-gradient(to_bottom,oklch(0_0_0_/_0.5),oklch(0_0_0_/_0.3)_25%,oklch(0_0_0_/_0))]',
   'backdrop-blur-none backdrop-saturate-100',
   // Transitions
   'transition-[opacity,backdrop-filter]',
