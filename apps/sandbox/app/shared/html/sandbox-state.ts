@@ -38,7 +38,8 @@ export function createHtmlSandboxState(audioOnly?: boolean): HtmlSandboxState {
 
 /** Render player-level attributes (media-title) as an HTML attribute string. */
 export function renderPlayerAttrs(state: HtmlSandboxState): string {
-  const { title } = SOURCES[state.source];
+  const { label } = SOURCES[state.source];
+  const title = label.split(' - ').slice(1).join(' - ');
   return `media-title="${title}"`;
 }
 

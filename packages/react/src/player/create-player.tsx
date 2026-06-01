@@ -85,8 +85,8 @@ export function createPlayer(config: CreatePlayerConfig<AnyPlayerFeature[]>): Cr
     useEffect(() => {
       if (!media) return;
       const cleanup = store.attach({ media, container });
-      const s = store.state as { setTitle?: (t: string | null) => void };
-      s.setTitle?.(titleRef.current ?? null);
+      const state = store.state as { setTitle?: (t: string | null) => void };
+      state.setTitle?.(titleRef.current ?? null);
       return cleanup;
     }, [media, container, store]);
 
