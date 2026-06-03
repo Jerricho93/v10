@@ -6,9 +6,9 @@ export const overlay = cn(
   'pointer-events-none rounded-[inherit]',
   // Default: hidden
   'opacity-0',
-  // Bottom darkening always; top darkening only when a title is present
+  // Bottom darkening always; top darkening only when title is visible (has title + paused)
   'bg-linear-to-t from-black/50 via-black/30 via-25% to-transparent',
-  '[:has([data-has-title])_&]:[background-image:linear-gradient(to_top,oklch(0_0_0_/_0.5),oklch(0_0_0_/_0),oklch(0_0_0_/_0.5))]',
+  '[:has([data-has-title]):has([data-paused])_&]:[background-image:linear-gradient(to_top,oklch(0_0_0_/_0.5),oklch(0_0_0_/_0),oklch(0_0_0_/_0.5))]',
   'backdrop-blur-none backdrop-saturate-100',
   // Transitions
   'transition-[opacity,backdrop-filter]',

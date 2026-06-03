@@ -15,7 +15,7 @@
   transition-property: opacity, backdrop-filter;
 }
 
-.media-default-skin:has([data-has-title]) .media-overlay {
+.media-default-skin:has([data-has-title]):has([data-paused]) .media-overlay {
   background-image: linear-gradient(to top, oklch(0 0 0 / 0.5), oklch(0 0 0 / 0), oklch(0 0 0 / 0.5));
 }
 
