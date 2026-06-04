@@ -327,8 +327,7 @@ export interface MediaMetadataState {
   /**
    * Human-readable title for the current media. `null` if not provided.
    *
-   * Used for: the visible title overlay, play button `aria-label`, and
-   * `navigator.mediaSession.metadata`.
+   * Used for: the visible title overlay and `navigator.mediaSession.metadata`.
    */
   title: string | null;
   /** Set the media title. Pass `null` to clear. */

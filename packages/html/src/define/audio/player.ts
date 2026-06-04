@@ -20,8 +20,10 @@ export class AudioPlayerElement extends ProviderMixin(MediaElement) {
 
   protected override update(changed: PropertyValues): void {
     super.update(changed);
-    const state = this.store.state as { setTitle?: (t: string | null) => void };
-    state.setTitle?.(this.mediaTitle);
+    if (changed.has('mediaTitle')) {
+      const state = this.store.state as { setTitle?: (t: string | null) => void };
+      state.setTitle?.(this.mediaTitle);
+    }
   }
 }
 
