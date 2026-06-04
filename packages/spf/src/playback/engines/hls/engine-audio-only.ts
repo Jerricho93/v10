@@ -8,7 +8,7 @@ import { makeShareSignals, type ShareSignalsConfig } from '../../../core/composi
 import type { BackBufferConfig } from '../../../media/buffer/back-buffer';
 import type { ForwardBufferConfig } from '../../../media/buffer/forward-buffer';
 import { parseMultivariantPlaylist } from '../../../media/hls/parse-multivariant';
-import type { MaybeResolvedPresentation } from '../../../media/types';
+import type { AudioTrack, MaybeResolvedPresentation } from '../../../media/types';
 import { getResolvedSelectedTrackDuration } from '../../../media/utils/track-selection';
 import type { SegmentLoaderActor } from '../../actors/dom/segment-loader';
 import type { SourceBufferActor } from '../../actors/dom/source-buffer';
@@ -25,8 +25,8 @@ import { trackLoadTriggers } from '../../behaviors/dom/track-load-triggers';
 import { updateMediaSourceDuration } from '../../behaviors/dom/update-mediasource-duration';
 import { type ParsePresentation, resolvePresentation } from '../../behaviors/resolve-presentation';
 import { resolveAudioTrack } from '../../behaviors/resolve-track';
-import { selectAudioTrack } from '../../behaviors/select-tracks';
 import { syncPreload } from '../../behaviors/sync-preload';
+import { switchAudioTrack } from '../../behaviors/track-switching';
 
 // ============================================================================
 // Audio-Only HLS Engine State & Context
@@ -43,6 +43,14 @@ export interface SimpleHlsAudioOnlyEngineState {
   presentation?: MaybeResolvedPresentation;
   preload?: 'auto' | 'metadata' | 'none';
   selectedAudioTrackId?: string;
+  /**
+   * Consumer-driven constraint narrowing the audio candidate set. Sibling
+   * of `userVideoTrackSelection` in the default engine. Partial-track
+   * shape — `{ language: 'es' }`, `{ id: 'audio-en' }`, etc.
+   * `selectAudioTrack` reads this and re-picks when it changes.
+   * Multi-language-audio Tier 2 programmatic-write path.
+   */
+  userAudioTrackSelection?: Partial<AudioTrack>;
   currentTime?: number;
   loadActivated?: boolean;
 }
@@ -90,7 +98,7 @@ const shareSignals = makeShareSignals<SimpleHlsAudioOnlyEngineState, SimpleHlsAu
  * Create an audio-only HLS playback engine.
  *
  * Subtractive composition variant of `createSimpleHlsEngine`: omits
- * video-side behaviors (`resolveVideoTrack`, `switchVideoQuality`,
+ * video-side behaviors (`resolveVideoTrack`, `switchVideoTrack`,
  * `setupVideoBufferActors`, `loadVideoSegments`) and text-track behaviors
  * (`selectTextTrack`, `resolveTextTrack`, `syncTextTracks`,
  * `setupTextTrackActors`, `loadTextTrackSegments`). The remaining audio
@@ -131,8 +139,10 @@ export function createHlsAudioOnlyEngine(
       trackLoadTriggers,
       resolvePresentation,
 
-      // Track selection — audio only.
-      selectAudioTrack,
+      // Audio track selection — slot owner with filter reactivity.
+      // Mid-stream flush on language switch is handled in segment-loader's
+      // planTasks, not here.
+      switchAudioTrack,
 
       // Resolve selected tracks — audio only.
       resolveAudioTrack,

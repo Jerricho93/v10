@@ -15,7 +15,7 @@ import {
   removeAllSubtitlesTracksFromMedia,
 } from '../../../media/dom/text/text-track-slots';
 import { parseMultivariantPlaylist } from '../../../media/hls/parse-multivariant';
-import type { MaybeResolvedPresentation, VideoTrack } from '../../../media/types';
+import type { AudioTrack, MaybeResolvedPresentation, VideoTrack } from '../../../media/types';
 import { getResolvedSelectedTrackDuration } from '../../../media/utils/track-selection';
 import type { BandwidthConfig, BandwidthState } from '../../../network/bandwidth-estimator';
 import type { SegmentLoaderActor } from '../../actors/dom/segment-loader';
@@ -35,11 +35,11 @@ import { syncTextTracks } from '../../behaviors/dom/sync-text-tracks';
 import { trackCurrentTime } from '../../behaviors/dom/track-current-time';
 import { trackLoadTriggers } from '../../behaviors/dom/track-load-triggers';
 import { updateMediaSourceDuration } from '../../behaviors/dom/update-mediasource-duration';
-import { switchVideoQuality } from '../../behaviors/quality-switching';
 import { type ParsePresentation, resolvePresentation } from '../../behaviors/resolve-presentation';
 import { resolveAudioTrack, resolveTextTrack, resolveVideoTrack } from '../../behaviors/resolve-track';
-import { selectAudioTrack, selectTextTrack } from '../../behaviors/select-tracks';
+import { selectTextTrack } from '../../behaviors/select-tracks';
 import { syncPreload } from '../../behaviors/sync-preload';
+import { switchAudioTrack, switchVideoTrack } from '../../behaviors/track-switching';
 
 // ============================================================================
 // HLS Engine State & Context
@@ -64,6 +64,13 @@ export interface SimpleHlsEngineState {
   selectedTextTrackId?: string;
   bandwidthState?: BandwidthState;
   userVideoTrackSelection?: Partial<VideoTrack>;
+  /**
+   * Consumer-driven constraint narrowing the audio candidate set. Sibling
+   * of `userVideoTrackSelection`. Partial-track shape — `{ language: 'es' }`,
+   * `{ id: 'audio-en' }`, etc. `selectAudioTrack` reads this and re-picks
+   * when it changes. Multi-language-audio Tier 2 programmatic-write path.
+   */
+  userAudioTrackSelection?: Partial<AudioTrack>;
   currentTime?: number;
   loadActivated?: boolean;
 }
@@ -237,9 +244,9 @@ export function createSimpleHlsEngine(
       resolvePresentation,
 
       // Track selection (reads config for initial preferences).
-      // Video selection lives in switchVideoQuality, which owns the
-      // default-pick + ABR-driven adjustment for selectedVideoTrackId.
-      selectAudioTrack,
+      // Video selection lives in switchVideoTrack (composed below);
+      // audio selection lives in switchAudioTrack (composed below) —
+      // both are slot owners with filter-reactivity, mirroring shapes.
       selectTextTrack,
 
       // Resolve selected tracks (fetch media playlists)
@@ -262,7 +269,11 @@ export function createSimpleHlsEngine(
 
       // Playback tracking
       trackCurrentTime,
-      switchVideoQuality,
+      switchVideoTrack,
+      switchAudioTrack,
+      // Mid-stream audio-buffer flush on language switch is handled in
+      // `segment-loader`'s `planTasks` (predicate: language differs from
+      // the previously-buffered track) — not in switchAudioTrack itself.
 
       // Segment loading
       loadVideoSegments,
@@ -283,7 +294,7 @@ export function createSimpleHlsEngine(
     ],
     {
       config: finalConfig,
-      // Seed bandwidthState so switchVideoQuality fires on initial subscribe
+      // Seed bandwidthState so switchVideoTrack fires on initial subscribe
       // with the `initialBandwidth` fallback rather than waiting for the
       // first chunk. The empty sample buffer means `getBandwidthEstimate`
       // returns the configured initial bandwidth until real samples land.
