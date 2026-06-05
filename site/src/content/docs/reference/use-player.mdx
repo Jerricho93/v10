@@ -4,6 +4,7 @@ description: Hook to access the player store from within a Player.Provider
 ---
 
 import UtilReference from "@/components/docs/api-reference/UtilReference.astro";
+import Aside from "@/components/Aside.astro";
 import Demo from "@/components/docs/demos/Demo.astro";
 import DocsLink from "@/components/docs/DocsLink.astro";
 import FrameworkCase from "@/components/docs/FrameworkCase.astro";
@@ -16,6 +17,18 @@ import selectorReactTsx from "@/components/docs/demos/use-player/react/css/Selec
 import selectorReactCss from "@/components/docs/demos/use-player/react/css/Selector.css?raw";
 
 `Player.usePlayer` gives you access to the player store from any component within a `Player.Provider`. It has two overloads — without arguments for direct store access, or with a selector for reactive state subscriptions. `Player.usePlayer` is typed to the features you passed to <DocsLink slug="reference/create-player">`createPlayer`</DocsLink>. It's also available as a standalone import (`import { usePlayer } from '@videojs/react'`), but the standalone version returns an untyped store.
+
+<Aside type="note" title="Typed vs. untyped access">
+`Player.usePlayer` (from <DocsLink slug="reference/create-player">`createPlayer`</DocsLink>) is typed to your features and needs no selector. The standalone `import { usePlayer } from '@videojs/react'` returns an untyped `UnknownStore` — pass a premade selector to recover typing.
+</Aside>
+
+```tsx
+import { usePlayer } from '@videojs/react';
+import { selectPlayback } from '@videojs/core/dom';
+
+usePlayer();               // UnknownStore (state: unknown)
+usePlayer(selectPlayback); // PlaybackState | undefined
+```
 
 ## Examples
 
