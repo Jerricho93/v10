@@ -774,7 +774,7 @@ function evaluateTemplate(templateBody: string, context: Record<string, unknown>
 }
 
 function escapeAttributeValue(value: string): string {
-  return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
 function createRenderMediaIcon(iconSet: 'default' | 'minimal') {

@@ -9,15 +9,20 @@ export function namedNodeMapToObject(namedNodeMap: NamedNodeMap) {
   return obj;
 }
 
+// Ampersand must be escaped first to avoid double-encoding the entities below.
+function escapeAttributeValue(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 /**
  * Helper function to serialize attributes into a string.
  */
 export function serializeAttributes(attrs: Record<string, string>) {
   let html = '';
   for (const key in attrs) {
-    const value = attrs[key];
+    const value = attrs[key]!;
     if (value === '') html += ` ${key}`;
-    else html += ` ${key}="${value}"`;
+    else html += ` ${key}="${escapeAttributeValue(value)}"`;
   }
   return html;
 }
