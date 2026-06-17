@@ -5,10 +5,10 @@
  * unload.
  *
  * Selection runs in two stages. First a **hard-constraints pre-pass**
- * (`applyConstraints`) prunes the unplayable from the candidate set — today the
- * failed-CDN constraint (`excludeFailedCdns`, failover cooldown); capability
- * probing will join it. Then a small ordered chain of rules (`applyRules`) picks
- * among the survivors. Each constraint/rule reads the signals it needs at apply
+ * (`applyConstraints`) prunes the unplayable from the candidate set — the
+ * failed-CDN constraint (`excludeFailedCdns`, failover cooldown) and the
+ * capability constraint (`excludeUnplayableTracks`, codec support). Then a small
+ * ordered chain of rules (`applyRules`) picks among the survivors. Each constraint/rule reads the signals it needs at apply
  * time, so the effect subscribes to exactly what was consulted. The chain is
  * three rules, most authoritative first:
  *
@@ -41,18 +41,25 @@
  * *scope* is the sticky-pick half of multi-CDN; the failed-CDN *constraint* is
  * the failover half — prune the cooled-down CDN, the scope falls to the next.)
  *
- * Deferred: capability probing as a second constraint; audio's preferred-
- * language / default-track selection as standing soft-filter rules (previously
- * the empty-slot picker, dropped in the move to the rule chain).
+ * When the pre-pass prunes a type's candidates to empty, the behavior leaves any
+ * prior pick in place and makes no new pick; the late `createSourceBuffer` check
+ * stays as the structural backstop for an unplayable rendition reaching the
+ * pipeline. Surfacing "nothing playable" as observable state is deferred until a
+ * consumer (error mapping) needs it.
+ *
+ * Deferred: audio's preferred-language / default-track selection as standing
+ * soft-filter rules (previously the empty-slot picker, dropped in the move to
+ * the rule chain).
  */
 
 import { type AnySlotMap, defineBehavior } from '../../core/composition/create-composition';
 import { createMachineReactor } from '../../core/reactors/create-machine-reactor';
-import { computed, type ReadonlySignal, type Signal } from '../../core/signals/primitives';
+import { computed, peek, type ReadonlySignal, type Signal } from '../../core/signals/primitives';
 import { DEFAULT_QUALITY_CONFIG, type QualityConfig, resolutionArea } from '../../media/abr/quality-selection';
 import { matchesPartialTrack } from '../../media/primitives/select-tracks';
 import {
   type AudioTrack,
+  type CanPlayTrack,
   isResolvedPresentation,
   type MaybeResolvedPresentation,
   type PartiallyResolvedAudioTrack,
@@ -96,6 +103,15 @@ export interface SwitchVideoTrackConfig {
   initialBandwidth?: number;
   /** Override CDN-id derivation (shared by the CDN scope + failover constraint). */
   getCdnId?: GetCdnId;
+  /**
+   * Codec capability probe read by the `excludeUnplayableTracks` hard
+   * constraint — drops renditions this environment can't decode before
+   * selection runs. Injected (rather than imported) so the DOM-free behavior
+   * never reaches a DOM API directly; the engine defaults it to the
+   * `MediaSource.isTypeSupported`-backed `canPlayTrack`. Absent → no codec
+   * filtering (the constraint passes everything through).
+   */
+  canPlayTrack?: CanPlayTrack;
 }
 
 /** Default initial-bandwidth value before bandwidth measurements arrive. */
@@ -222,7 +238,18 @@ export function applyConstraints<T, State, Context, Config>(
  * audio candidates area-compare equal). Every resolved/partially-resolved video
  * track carries them all; audio tracks omit the dimensions.
  */
-type SwitchableTrack = { id: string; url: string; bandwidth?: number; width?: number; height?: number };
+type SwitchableTrack = {
+  id: string;
+  url: string;
+  bandwidth?: number;
+  width?: number;
+  height?: number;
+  // Read by the capability constraint to probe codec support. Optional on the
+  // minimal shape; every resolved/partially-resolved video & audio candidate
+  // carries them, and an absent `mimeType` makes a track unprobeable (kept).
+  mimeType?: string;
+  codecs?: string[];
+};
 
 type SelectionKey = 'selectedVideoTrackId' | 'selectedAudioTrackId';
 type UserSelectionKey = 'userVideoTrackSelection' | 'userAudioTrackSelection';
@@ -339,6 +366,17 @@ type CdnRuleConfig<S extends SelectionKey, T extends SwitchableTrack> = TrackSwi
   getCdnId?: GetCdnId;
 };
 
+/**
+ * Config the capability constraint reads: the base config plus an *optional*
+ * `canPlayTrack` codec probe. Optional → an unwired probe means "no codec
+ * filtering" and the constraint passes everything through, so the base config
+ * (without it) stays assignable. The engine defaults it to the DOM-bound
+ * `canPlayTrack`.
+ */
+type CapabilityConstraintConfig<S extends SelectionKey, T extends SwitchableTrack> = TrackSwitchingConfig<S, T> & {
+  canPlayTrack?: CanPlayTrack;
+};
+
 type VideoTrackCandidate = PartiallyResolvedVideoTrack | VideoTrack;
 type AudioTrackCandidate = PartiallyResolvedAudioTrack | AudioTrack;
 
@@ -373,8 +411,8 @@ function filterByUserSelection<S extends SelectionKey, U extends UserSelectionKe
  *
  * Passes everything through when there's no `failedCdns` signal/value. When it
  * prunes *every* track (all CDNs cooled down), the empty result is preserved
- * (per `applyConstraints`) — "nothing playable," which today leaves the prior
- * pick in place.
+ * (per `applyConstraints`) — "nothing playable," which clears the selection (no
+ * pick); a later CDN recovery refills the candidate set and re-picks.
  */
 function excludeFailedCdns<S extends SelectionKey, T extends SwitchableTrack>(
   tracks: readonly T[],
@@ -385,6 +423,31 @@ function excludeFailedCdns<S extends SelectionKey, T extends SwitchableTrack>(
   const getCdnId = config.getCdnId ?? defaultGetCdnId;
   const failedSet = new Set(failed);
   return tracks.filter((track) => !failedSet.has(getCdnId(track.url)));
+}
+
+/**
+ * Capability constraint — a *hard* filter (constraints pre-pass), shared by
+ * video and audio. Removes renditions this environment can't decode, probed via
+ * the injected `canPlayTrack` (codec → `MediaSource.isTypeSupported`). Moving
+ * the check here — before selection — means an unplayable variant (e.g. HEVC on
+ * a browser without HEVC) is pruned upstream and never picked, instead of
+ * surviving into the pipeline to fail late at `createSourceBuffer`. That late
+ * throw stays as a defensive structural guarantee; with this constraint it
+ * should rarely fire.
+ *
+ * Passes everything through when there's no `canPlayTrack` probe (a composition
+ * that didn't wire it, or DOM-free tests). When it prunes *every* track (no
+ * decodable rendition), the empty result is preserved (per `applyConstraints`)
+ * — "nothing playable," so the behavior clears the selection (no pick) and the
+ * late `createSourceBuffer` check stays as the backstop.
+ */
+function excludeUnplayableTracks<S extends SelectionKey, T extends SwitchableTrack>(
+  tracks: readonly T[],
+  { config }: SelectionRuleDeps<TrackSwitchingStateMap<S>, AnySlotMap, CapabilityConstraintConfig<S, T>>
+): readonly T[] {
+  const canPlay = config.canPlayTrack;
+  if (!canPlay) return tracks;
+  return tracks.filter((track) => canPlay(track));
 }
 
 /**
@@ -532,14 +595,34 @@ function setupTrackSwitching<
         effects: [
           () => {
             // Reactive read: subscribes the reaction to the candidate set, so a
-            // new presentation — or a future constraint pruning it — re-fires
-            // this and re-picks.
+            // new presentation — or a constraint pruning it — re-fires this and
+            // re-picks.
             const tracks = candidateSet.get();
-            // No playable tracks: no tracks of this type, or (once constraints
-            // exist) everything pruned. Nothing to pick. Surfacing "nothing
-            // playable" as a distinct not-ready state is left to the constraints
-            // work; for now it's a silent no-op, leaving any prior pick in place.
-            if (!tracks.length) return;
+
+            // Empty candidate set — two shapes, told apart by whether the type
+            // has any tracks at all:
+            //   - The type has no tracks (e.g. a video-only source's absent
+            //     audio): legitimate, nothing to pick or clear.
+            //   - The type HAS tracks but the hard-constraints pre-pass pruned
+            //     every one (every rendition undecodable, or every CDN in
+            //     failover cooldown): no playable rendition. Clear the selection
+            //     so a pick made earlier — e.g. under the initial mp4 label,
+            //     before resolve-track relabeled the type to a non-fMP4
+            //     container — can't linger as a now-unplayable selection and
+            //     silently stall the pipeline.
+            // The `console.error` is a placeholder until the planned error
+            // behaviors surface "nothing playable" as observable state.
+            if (!tracks.length) {
+              const presentation = peek(state.presentation);
+              const hasTracksOfType = isResolvedPresentation(presentation) && getTracks(presentation).length > 0;
+              if (hasTracksOfType) {
+                console.error(
+                  `[track-switching] every ${selectionKey} candidate was filtered out by constraints; clearing selection`
+                );
+                state[selectionKey].set(undefined);
+              }
+              return;
+            }
 
             // The whole deps object passes straight through to every rule in the
             // variant-supplied chain (state + config from the behavior; context
@@ -602,7 +685,7 @@ export const switchVideoTrack = defineBehavior({
         selectionKey: 'selectedVideoTrackId',
         userSelectionKey: 'userVideoTrackSelection',
         getTracks: (presentation) => getTracksByType(presentation, 'video') as readonly VideoTrackCandidate[],
-        constraints: [excludeFailedCdns],
+        constraints: [excludeFailedCdns, excludeUnplayableTracks],
         rules: [filterByUserSelection, preferActiveCdn, rankByBandwidth],
       },
     }),
@@ -653,7 +736,7 @@ export const switchAudioTrack = defineBehavior({
         selectionKey: 'selectedAudioTrackId',
         userSelectionKey: 'userAudioTrackSelection',
         getTracks: (presentation) => getTracksByType(presentation, 'audio') as readonly AudioTrackCandidate[],
-        constraints: [excludeFailedCdns],
+        constraints: [excludeFailedCdns, excludeUnplayableTracks],
         rules: [filterByUserSelection, preferActiveCdn, rankByBandwidth],
       },
     }),

@@ -7,8 +7,9 @@ import {
 import { makeShareSignals, type ShareSignalsConfig } from '../../../core/composition/share-signals';
 import type { BackBufferConfig } from '../../../media/buffer/back-buffer';
 import type { ForwardBufferConfig } from '../../../media/buffer/forward-buffer';
+import { canPlayTrack } from '../../../media/dom/capabilities';
 import { parseMultivariantPlaylist } from '../../../media/hls/parse-multivariant';
-import type { AudioTrack, MaybeResolvedPresentation } from '../../../media/types';
+import type { AudioTrack, CanPlayTrack, MaybeResolvedPresentation } from '../../../media/types';
 import type { GetCdnId } from '../../../media/utils/cdn';
 import { getResolvedSelectedTrackDuration } from '../../../media/utils/track-selection';
 import type { SegmentLoaderActor } from '../../actors/dom/segment-loader';
@@ -98,6 +99,14 @@ export type SimpleHlsAudioOnlyEngineSignals = {
 export interface SimpleHlsAudioOnlyEngineConfig
   extends ShareSignalsConfig<SimpleHlsAudioOnlyEngineState, SimpleHlsAudioOnlyEngineContext> {
   preferredAudioLanguage?: string;
+  /**
+   * Codec capability probe read by `track-switching`'s `excludeUnplayableTracks`
+   * constraint. Defaults to the `MediaSource.isTypeSupported`-backed
+   * `canPlayTrack`; override to force-exclude a codec. Mirrors the default
+   * engine — without it, capability probing (and TS / raw-AAC detection) would
+   * be inert for audio-only playback.
+   */
+  canPlayTrack?: CanPlayTrack;
   resolveDuration?: PresentationDurationResolver;
   parsePresentation?: ParsePresentation;
   forwardBuffer?: Partial<ForwardBufferConfig>;
@@ -159,6 +168,7 @@ export function createHlsAudioOnlyEngine(
 ): Composition<SimpleHlsAudioOnlyEngineState, SimpleHlsAudioOnlyEngineContext> {
   const finalConfig = {
     ...config,
+    canPlayTrack: config.canPlayTrack ?? canPlayTrack,
     resolveDuration: config.resolveDuration ?? getResolvedSelectedTrackDuration,
     parsePresentation: config.parsePresentation ?? parseMultivariantPlaylist,
   };

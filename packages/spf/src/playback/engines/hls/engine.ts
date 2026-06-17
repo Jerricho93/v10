@@ -8,6 +8,7 @@ import { makeShareSignals, type ShareSignalsConfig } from '../../../core/composi
 import type { QualityConfig } from '../../../media/abr/quality-selection';
 import type { BackBufferConfig } from '../../../media/buffer/back-buffer';
 import type { ForwardBufferConfig } from '../../../media/buffer/forward-buffer';
+import { canPlayTrack } from '../../../media/dom/capabilities';
 import { resolveVttSegment } from '../../../media/dom/text/resolve-vtt-segment';
 import {
   addSubtitlesTracksToMedia,
@@ -15,7 +16,7 @@ import {
   removeAllSubtitlesTracksFromMedia,
 } from '../../../media/dom/text/text-track-slots';
 import { parseMultivariantPlaylist } from '../../../media/hls/parse-multivariant';
-import type { AudioTrack, MaybeResolvedPresentation, VideoTrack } from '../../../media/types';
+import type { AudioTrack, CanPlayTrack, MaybeResolvedPresentation, VideoTrack } from '../../../media/types';
 import type { GetCdnId } from '../../../media/utils/cdn';
 import { getResolvedSelectedTrackDuration } from '../../../media/utils/track-selection';
 import type { BandwidthConfig, BandwidthState } from '../../../network/bandwidth-estimator';
@@ -135,6 +136,14 @@ export interface SimpleHlsEngineConfig extends ShareSignalsConfig<SimpleHlsEngin
    * collected. Default: `DEFAULT_INITIAL_BANDWIDTH` (5 Mbps).
    */
   initialBandwidth?: number;
+  /**
+   * Codec capability probe injected into `track-switching`'s
+   * `excludeUnplayableTracks` constraint — drops renditions the environment
+   * can't decode before selection. Defaults to the `MediaSource.isTypeSupported`
+   * -backed `canPlayTrack`; supply your own to override (e.g. force-exclude a
+   * codec).
+   */
+  canPlayTrack?: CanPlayTrack;
   preferredAudioLanguage?: string;
   preferredSubtitleLanguage?: string;
   includeForcedTracks?: boolean;
@@ -272,6 +281,7 @@ export function createSimpleHlsEngine(
 ): Composition<SimpleHlsEngineState, SimpleHlsEngineContext> {
   const finalConfig = {
     ...config,
+    canPlayTrack: config.canPlayTrack ?? canPlayTrack,
     resolveTextTrackSegment: config.resolveTextTrackSegment ?? resolveVttSegment,
     resolveDuration: config.resolveDuration ?? getResolvedSelectedTrackDuration,
     parsePresentation: config.parsePresentation ?? parseMultivariantPlaylist,
