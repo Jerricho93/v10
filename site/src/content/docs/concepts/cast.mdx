@@ -67,7 +67,7 @@ export default function App() {
   return (
     <Player.Provider>
       <Player.Container>
-        <HlsVideo src="https://stream.mux.com/..." autoPlay muted playsInline loop />
+        <HlsVideo src="https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM.m3u8" autoPlay muted playsInline loop />
         <CastButton />
       </Player.Container>
     </Player.Provider>
@@ -80,7 +80,7 @@ export default function App() {
 ```html
 <video-player>
   <media-container>
-    <hls-video src="https://stream.mux.com/....m3u8" autoplay muted playsinline loop></hls-video>
+    <hls-video src="https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM.m3u8" autoplay muted playsinline loop></hls-video>
     <media-cast-button></media-cast-button>
   </media-container>
 </video-player>
@@ -89,82 +89,86 @@ export default function App() {
 
 ## Configuring Cast
 
+All Cast configuration is set via the `config.googleCast` property. In React, pass it as a declarative prop. In HTML, set it as a JavaScript property; HTML attributes are not supported.
+
 ### Custom receiver application ID
 
-By default, Video.js uses Google's [Default Media Receiver](https://developers.google.com/cast/docs/web_sender/integrate#default_media_web_receiver) (`CC1AD845`). To use your own receiver app, set `castReceiver`:
+By default, Video.js uses Google's [Default Media Receiver](https://developers.google.com/cast/docs/web_sender/integrate#default_media_web_receiver) (`CC1AD845`). To use your own receiver app, set `receiver`:
 
 <FrameworkCase frameworks={["react"]}>
 ```tsx
-<HlsVideo src="..." castReceiver="YOUR_APP_ID" />
+<HlsVideo src="https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM.m3u8" config={{ googleCast: { receiver: 'YOUR_APP_ID' } }} />
 ```
 </FrameworkCase>
 
 <FrameworkCase frameworks={["html"]}>
-```html
-<hls-video src="..." castreceiver="YOUR_APP_ID"></hls-video>
+```ts
+const video = document.querySelector('hls-video');
+video.config = { googleCast: { receiver: 'YOUR_APP_ID' } };
 ```
 </FrameworkCase>
 
 ### Custom data on load
 
-Pass arbitrary data to the receiver with each load request via `castCustomData`. The receiver app can read this from the `customData` field of the load request:
+Pass arbitrary data to the receiver with each load request via `customData`. The receiver app reads it from the `customData` field of the load request:
 
 <FrameworkCase frameworks={["react"]}>
 ```tsx
 <HlsVideo
-  src="..."
-  castCustomData={{ token: 'abc123', userId: 'u_789' }}
+  src="https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM.m3u8"
+  config={{ googleCast: { customData: { token: 'abc123', userId: 'u_789' } } }}
 />
 ```
 </FrameworkCase>
 
 <FrameworkCase frameworks={["html"]}>
 ```ts
-// HTML attributes can only carry strings; set the property in JS instead
 const video = document.querySelector('hls-video');
-video.castCustomData = { token: 'abc123', userId: 'u_789' };
+video.config = { googleCast: { customData: { token: 'abc123', userId: 'u_789' } } };
 ```
 </FrameworkCase>
 
 ### Cast source override
 
-By default the receiver loads the same URL as the browser. Use `castSrc` to send a different URL (for example, a separate manifest or CDN-edge URL accessible from the TV network):
+By default the receiver loads the same URL as the browser. Use `src` (and optionally `contentType`) to send a different URL, for example, a separate manifest or CDN-edge URL accessible from the TV network:
 
 <FrameworkCase frameworks={["react"]}>
 ```tsx
 <HlsVideo
-  src="https://stream.mux.com/.../highest.mp4"
-  castSrc="https://stream.mux.com/.../manifest.m3u8"
-  castContentType="application/x-mpegURL"
+  src="https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM/highest.mp4"
+  config={{ googleCast: { src: 'https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM.m3u8', contentType: 'application/x-mpegURL' } }}
 />
 ```
 </FrameworkCase>
 
 <FrameworkCase frameworks={["html"]}>
-```html
-<hls-video
-  src="https://stream.mux.com/.../highest.mp4"
-  castsrc="https://stream.mux.com/.../manifest.m3u8"
-  castcontenttype="application/x-mpegURL"
-></hls-video>
+```ts
+const video = document.querySelector('hls-video');
+video.config = {
+  googleCast: {
+    src: 'https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM.m3u8',
+    contentType: 'application/x-mpegURL',
+  },
+};
 ```
 </FrameworkCase>
 
 ### HLS on the receiver
 
-When the source (or `castSrc`) is an HLS playlist, Video.js automatically detects the segment format (TS or fMP4) by inspecting the playlist and sets `hlsSegmentFormat` / `hlsVideoSegmentFormat` on the Cast load request. The default media receiver handles HLS natively, so no extra configuration is needed.
+When the source (or `config.googleCast.src`) is an HLS playlist, Video.js automatically detects the segment format (TS or fMP4) by inspecting the playlist and sets `hlsSegmentFormat` / `hlsVideoSegmentFormat` on the Cast load request. The default media receiver handles HLS natively, so no extra configuration is needed.
 
-Use `castStreamType` to tell the receiver whether the stream is `'on-demand'` or `'live'` (falls back to the player's `streamType` when unset):
+Use `streamType` to tell the receiver whether the stream is `'on-demand'` or `'live'` (falls back to the player's `streamType` when unset):
 
 <FrameworkCase frameworks={["react"]}>
 ```tsx
-<HlsVideo src="https://stream.mux.com/.../manifest.m3u8" castStreamType="live" />
+<HlsVideo src="https://stream.mux.com/BV3YZtogl89mg9VcNBhhnHm02Y34zI1nlMuMQfAbl3dM.m3u8" config={{ googleCast: { streamType: 'live' } }} />
 ```
 </FrameworkCase>
 
 <FrameworkCase frameworks={["html"]}>
-```html
-<hls-video src="https://stream.mux.com/.../manifest.m3u8" caststreamtype="live"></hls-video>
+```ts
+const video = document.querySelector('hls-video');
+video.config = { googleCast: { streamType: 'live' } };
 ```
 </FrameworkCase>
 
