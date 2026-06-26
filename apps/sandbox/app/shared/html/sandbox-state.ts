@@ -9,6 +9,7 @@ import {
 } from '@app/shared/sandbox-listener';
 import { SOURCES, type SourceId } from '@app/shared/sources';
 import type { Skin, Styling } from '@app/types';
+import { serializeAttributes } from '@videojs/utils/dom';
 
 function getInitialStyling(): Styling {
   return new URLSearchParams(location.search).get('styling') === 'tailwind' ? 'tailwind' : 'css';
@@ -40,19 +41,17 @@ export function createHtmlSandboxState(audioOnly?: boolean): HtmlSandboxState {
 export function renderPlayerAttrs(state: HtmlSandboxState): string {
   const { label } = SOURCES[state.source];
   const title = label.split(' - ').slice(1).join(' - ');
-  return `media-title="${title}"`;
+  return serializeAttributes({ 'media-title': title }).trimStart();
 }
 
 /** Render the user-controlled media attributes (autoplay/muted/loop/preload) as HTML attributes. */
 export function renderMediaAttrs(state: HtmlSandboxState): string {
-  return [
-    state.autoplay ? 'autoplay' : '',
-    state.muted ? 'muted' : '',
-    state.loop ? 'loop' : '',
-    `preload="${state.preload}"`,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  return serializeAttributes({
+    ...(state.autoplay ? { autoplay: '' } : {}),
+    ...(state.muted ? { muted: '' } : {}),
+    ...(state.loop ? { loop: '' } : {}),
+    preload: state.preload,
+  }).trimStart();
 }
 
 export function createLatestLoader() {
